@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<!-- saved from url=(0047)http://fiddle.jshell.net/rd3k/7QRaP/show/light/ -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <title> - jsFiddle demo by rd3k</title>
+  
+  <script type="text/javascript" src="./index_files/jquery-2.0.0b1.js"></script>
+  
+  
+  
+  <link rel="stylesheet" type="text/css" href="./index_files/result-light.css">
+  
+  <style type="text/css">
+    template { display: none; }
+
+.github-widget { background: #f4f4f4; border-radius: 6px; border: 1px #ccc solid; font-family: "Helvetica Neue"; font-size: 13px; width: 300px; padding: 10px; margin: 5px; float: left; }
+
+.github-avatar { width: 20px; float: left; margin-right: 10px; }
+
+.github-username { font-size: 16px; font-weight: bold; color: #222; }
+
+.github-user {
+  float: left;
+}
+
+.github-repo-lists {
+    clear: both; margin-top: 40px;
+}
+
+.github-follow-info { float: right; text-align: right; font-size: 11px; }
+
+.github-repos { list-style: none; padding: 0; overflow-y: auto; margin-bottom: 0; }
+
+.github-repo-desc { display: block; margin: 8px 0; }
+
+.github-repo { padding: 5px 5px 5px 25px; margin-bottom: 5px; border: 1px #ccc solid; background: #fff  url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAQCAIAAABCwWJuAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABgSURBVChTY9hem0YA1G5//v8/w1Soqqnn/2MF56emgaSQ1UGFUJVjUTdqHjAE0MMFT6RAwxlXTECCE2EeOP5AfAhA1fYcGP9g84hNB7DIwmEeTJoBrm472Prn27djTTgAmNLUpAzf3/YAAAAASUVORK5CYII=) no-repeat 5px 5px; }
+
+.github-repo-link { color: #222; }
+
+.github-repo-watchers { background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA+ElEQVR4Xt2SvW2EQBCFZwUJCWdBCAkEIEiggyvBdMCV4A7sEtyBuQoOd3Kb0IY5EgKQ1m8kC60G5Nx+0qdZvfmRdmfp70vZRlVVJ4SLUoqp7Zwx5g46GJ3W+rEbUJblM5o68ERCYtAILsMwfG5mlmUfeZ4bwa0oijPDZ5nnHmIlSfIKjE2apjcSYk/WcS/FcWwOOEdRdEL8Yghi76jWXZaFDjQ6jkPrum7GVicJw7ANgsAIdldgT9ZxryLI9/2WVyTW1oN3GCM28wYaK83eyzRN122NnudVP0Nq+l13/ifzPOvdR2Jc120RGgxrbB9NPUKPd7nS/9I3ul2FQZPbitwAAAAASUVORK5CYII=) no-repeat right center; float: right; padding-right: 20px; margin-right: 5px; }
+  </style>
+  
+
+
+<script type="text/javascript">//<![CDATA[ 
+$(window).load(function(){
+var users_api = "https://api.github.com/users/";
+
+var repo_sorts = [ "created" , "updated" , "pushed" , "full_name" ];
+var repo_sort_dirs = [ "asc" , "desc" ];
+var repo_types = [ "all" , "owner" , "member" ];
+
+function users_api_get ( data , cb ) { $.getJSON ( users_api + username + "/" + data , function ( r ) { cb ( r ); } ); }
+
+function get_user_info ( user , $el , cb ) {
+  $.getJSON ( users_api + user , function ( r ) { cb ( r , $el ); } );
+}
+
+function get_repos ( sort , dir , type , $target , cb ) {
+  users_api_get ( "repos?sort=" + sort + "&direction=" + dir + "&type=" + type , function ( r ) {
+    cb ( r , $target );
+  } );
+}
+
+function make_widget ( el ) {
+
+  $el = $ ( el );
+
+  username = $el.data ( "user" );
+    
+  var tplcnt = $ ( "#github-repo-tpl" ) [ 0 ].content ,
+      repos = $el.find ( ".github-repos" ) ,
+      show_repos = repos.length > 0;
+    
+  get_user_info ( username , $el , function ( r , $el ) {
+    $username = $el.find ( ".github-username" );
+    $username.text ( r.login );
+    var $u;
+    $username.each ( function () {
+      $u = $ ( this );
+      if ( $u.is ( "a" ) ) {
+        $u.attr ( "href" , r.html_url );
+      }
+    });
+    $el.find ( ".github-following" ).html ( r.following ).end ()
+       .find ( ".github-followers" ).html ( r.followers ).end ()
+       .find ( ".github-avatar" ).attr ( "src" , r.avatar_url );
+  } );
+
+  if ( show_repos ) {
+    repos.each ( function () {
+      $this = $ ( this );
+      var sort = "full_name" , dir = "asc" , type = "all" ,
+          want_sort = $this.data ( "sort" ) , want_type = $this.data ( "type" );
+      if ( want_sort != undefined ) {
+        want_sort = want_sort.split ( "|" );
+        switch ( want_sort.length ) {
+          case 2 :
+            if ( repo_sort_dirs.indexOf ( want_sort [ 1 ] ) >= 0 ) {
+              dir = want_sort [ 1 ];
+            }
+          case 1 :
+            if ( repo_sorts.indexOf ( want_sort [ 0 ] ) >= 0 ) {
+              sort = want_sort [ 0 ];
+            }
+          case 0 : default : break;
+        }
+      }
+      if ( want_type != undefined && repo_types.indexOf ( want_type ) ) {
+        type = want_type;
+      }
+      var show_name = true , show_full_name = false;
+      var rep , item , has_language , has_description;
+      get_repos ( sort , dir , type , $this , function ( r , $t ) {
+        var n = r.length;
+        if ( n == 0 ) {
+           $t.append ( "No public repositories!" );
+        } else {
+          for ( var i = 0; i < n; i ++ ) {
+
+            rep = r [ i ];
+            has_language = rep.language != null;
+            has_description = rep.description != null && rep.description != "";
+          
+            var rep_name = tplcnt.querySelector ( ".github-repo-name" );
+            if ( rep_name != undefined ) {
+              rep_name.textContent = rep.full_name;
+            }
+
+            var rep_link = tplcnt.querySelector ( ".github-repo-link" );
+            if ( rep_link != undefined ) {
+              rep_link.setAttribute ( "href" , rep.html_url );
+            }
+
+            var rep_desc = tplcnt.querySelector ( ".github-repo-desc" );
+            if ( rep_desc != undefined ) {
+              rep_desc.textContent = rep.description;
+            }
+
+            var rep_lang = tplcnt.querySelector ( ".github-repo-lang" );
+            if ( rep_lang != undefined ) {
+              if ( ! has_language ) {
+                rep.language = "None";
+              }
+              rep_lang.textContent = rep.language;
+            }
+
+            var rep_watchers = tplcnt.querySelector ( ".github-repo-watchers" );
+            if ( rep_watchers != undefined ) {
+              rep_watchers.textContent = rep.watchers;
+            }
+            
+            $t.append ( tplcnt.cloneNode ( true ) );
+
+          }
+        }
+      } );
+    } );
+  }
+
+}
+
+$ ( ".github-widget" ).each ( function () {
+  make_widget ( this );
+} );
+});//]]>  
+
+</script>
+
+
+</head>
+<body>
+  <div class="github-widget" data-user="rd3k">
+  <div class="github-user">
+    <img class="github-avatar" src="./index_files/8b9f9cbee6c417d97730ccf06d3c1b1e"><a class="github-username" href="https://github.com/rd3k">rd3k</a>
+  </div>
+  <div class="github-follow-info">
+    <span>Followed by <span class="github-followers">4</span> users</span>
+      <br> <span>Following <span class="github-following">2</span> users</span>
+  </div>
+  <div class="github-repo-lists">
+    <h4>Owner</h4>
+    <ul data-type="owner" data-sort="full_name|asc" class="github-repos">
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/rd3k/Cubrick"><span class="github-repo-name">rd3k/Cubrick</span></a> 
+    <span class="github-repo-desc"></span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">1</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/rd3k/SAT"><span class="github-repo-name">rd3k/SAT</span></a> 
+    <span class="github-repo-desc">A satisfiability solver</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">Python</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/rd3k/try_git"><span class="github-repo-name">rd3k/try_git</span></a> 
+    <span class="github-repo-desc"></span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">None</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+</ul>
+      <h4>Member</h4>
+    <ul data-type="member" data-sort="full_name|asc" class="github-repos">
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/IntelOrca/android-sms-htmlifier"><span class="github-repo-name">IntelOrca/android-sms-htmlifier</span></a> 
+    <span class="github-repo-desc">Converts android sms xml backup file to useful html format.</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/mzmiric5/Group5-Game"><span class="github-repo-name">mzmiric5/Group5-Game</span></a> 
+    <span class="github-repo-desc">GameDevSoc Group5 Game git repo</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">1</span>
+    </div>
+  </li>
+</ul>
+  </div>
+</div>
+
+<div class="github-widget" data-user="IntelOrca">
+  <div class="github-user">
+    <img class="github-avatar" src="./index_files/1f20f7c12fd24206f85f008be973ca43"><a class="github-username" href="https://github.com/IntelOrca">IntelOrca</a>
+  </div>
+  <div class="github-follow-info">
+    <span>Followed by <span class="github-followers">4</span> users</span>
+      <br> <span>Following <span class="github-following">3</span> users</span>
+  </div>
+  <div class="github-repo-lists">
+    <h4>Owner</h4>
+    <ul data-type="owner" data-sort="full_name|asc" class="github-repos">
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/IntelOrca/android-sms-htmlifier"><span class="github-repo-name">IntelOrca/android-sms-htmlifier</span></a> 
+    <span class="github-repo-desc">Converts android sms xml backup file to useful html format.</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/IntelOrca/categories"><span class="github-repo-name">IntelOrca/categories</span></a> 
+    <span class="github-repo-desc">A pen and paper game which is controlled by a small application.</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/IntelOrca/PeggleEdit"><span class="github-repo-name">IntelOrca/PeggleEdit</span></a> 
+    <span class="github-repo-desc">A level editor for Peggle and Peggle Nights using C# and WPF.</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/IntelOrca/theme-tune-quiz"><span class="github-repo-name">IntelOrca/theme-tune-quiz</span></a> 
+    <span class="github-repo-desc">A music quiz software system.</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">1</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/IntelOrca/whos-in-the-computer"><span class="github-repo-name">IntelOrca/whos-in-the-computer</span></a> 
+    <span class="github-repo-desc">A desktop application based on the game Who's in the Bag.</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+</ul>
+      <h4>Member</h4>
+    <ul data-type="member" data-sort="full_name|asc" class="github-repos">
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/mzmiric5/Group5-Game"><span class="github-repo-name">mzmiric5/Group5-Game</span></a> 
+    <span class="github-repo-desc">GameDevSoc Group5 Game git repo</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">1</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/rd3k/Cubrick"><span class="github-repo-name">rd3k/Cubrick</span></a> 
+    <span class="github-repo-desc"></span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">1</span>
+    </div>
+  </li>
+</ul>
+  </div>
+</div>
+
+<div class="github-widget" data-user="mzmiric5">
+  <div class="github-user">
+    <img class="github-avatar" src="./index_files/34ee078ab302f3762aec31bf6714962e"><a class="github-username" href="https://github.com/mzmiric5">mzmiric5</a>
+  </div>
+  <div class="github-follow-info">
+    <span>Followed by <span class="github-followers">5</span> users</span>
+      <br> <span>Following <span class="github-following">7</span> users</span>
+  </div>
+  <div class="github-repo-lists">
+    <ul data-type="all" data-sort="full_name|asc" class="github-repos">
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/mzmiric5/AutoPull"><span class="github-repo-name">mzmiric5/AutoPull</span></a> 
+    <span class="github-repo-desc">My small hack to pull/deploy on a server whenever there is a commit to a github repo</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">Shell</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/mzmiric5/Cubrick8"><span class="github-repo-name">mzmiric5/Cubrick8</span></a> 
+    <span class="github-repo-desc"></span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/mzmiric5/Group5-Game"><span class="github-repo-name">mzmiric5/Group5-Game</span></a> 
+    <span class="github-repo-desc">GameDevSoc Group5 Game git repo</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">1</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/mzmiric5/MikeSnipuyts"><span class="github-repo-name">mzmiric5/MikeSnipuyts</span></a> 
+    <span class="github-repo-desc">A collection of my Ruby snippets</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">Ruby</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/mzmiric5/rambling-trie"><span class="github-repo-name">mzmiric5/rambling-trie</span></a> 
+    <span class="github-repo-desc">A custom implementation of the Trie data structure with Ruby.</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">Ruby</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/mzmiric5/RubyHanoi"><span class="github-repo-name">mzmiric5/RubyHanoi</span></a> 
+    <span class="github-repo-desc">My approach to solving the tower of hanoi problem with ruby</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">Ruby</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/mzmiric5/theme-tune-quiz"><span class="github-repo-name">mzmiric5/theme-tune-quiz</span></a> 
+    <span class="github-repo-desc">A music quiz software system.</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+
+  <li class="github-repo">
+    <a class="github-repo-link" href="https://github.com/mzmiric5/xplatform-ms-htmlifier"><span class="github-repo-name">mzmiric5/xplatform-ms-htmlifier</span></a> 
+    <span class="github-repo-desc">Converts android sms xml backup file to useful html format.</span>
+    <div class="github-repo-info">
+      <span>Language: <span class="github-repo-lang">C#</span></span>
+      <span class="github-repo-watchers">0</span>
+    </div>
+  </li>
+</ul>
+  </div>
+</div>
+
+<div class="github-widget" data-user="Narrenschyff">
+  <div class="github-user">
+    <img class="github-avatar" src="./index_files/270a0df247f94ad40a55dd871e30d656"><a class="github-username" href="https://github.com/Narrenschyff">Narrenschyff</a>
+  </div>
+  <div class="github-follow-info">
+    <span>Followed by <span class="github-followers">1</span> users</span>
+      <br> <span>Following <span class="github-following">0</span> users</span>
+  </div>
+  <div class="github-repo-lists">
+    <ul data-type="all" data-sort="full_name|asc" class="github-repos">No public repositories!</ul>
+  </div>
+</div>
+
+<template id="github-repo-tpl"></template>
+  
+
+
+
+
+
+</body></html>
